@@ -16,12 +16,17 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
-  // Optional for WebAuthn support
   Authenticator Authenticator[]
- 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relation avec le modèle Cart
+  cart          Cart?           @relation("UserCart")
+  cartId        String?         @unique
+  // Relation avec le modèle Order
+  orders        Order[]         @relation("UserOrders")
 }
+
  
 model Account {
   userId            String
@@ -77,3 +82,58 @@ model Authenticator {
  
   @@id([userId, credentialID])
 }
+
+model Payment {
+  id        String   @id @default(uuid())
+  amount    Int
+  status    String
+  userId    String
+  createdAt DateTime @default(now())
+}
+
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  cart        Cart[]   @relation("CartProducts")
+  cartItems   CartItem[]
+  orders      Order[]  @relation("OrderProducts") // Relation avec les commandes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Cart {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  products  Product[] @relation("CartProducts")
+  user      User      @relation("UserCart", fields: [userId], references: [id]) 
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  productId String
+  cartId    String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id          String    @id @default(cuid())
+  userId      String    
+  totalAmount Int       
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation("UserOrders", fields: [userId], references: [id], onDelete: Cascade)
+  products    Product[]  @relation("OrderProducts") // Relation avec les produits
+}
+
+
